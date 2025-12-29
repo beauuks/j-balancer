@@ -1,10 +1,13 @@
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class LoadBalancer {
     private static final int[] BACKEND_PORTS = {8081, 8082, 8083};
     private static int currentServerIndex = 0;
+    private static ExecutorService executor = Executors.newFixedThreadPool(10);
 
     public static void main(String[] args) throws IOException {
         ServerSocket serverSocket = new ServerSocket(8080);
@@ -15,9 +18,10 @@ public class LoadBalancer {
             Socket clientSocket = serverSocket.accept();
             System.out.println("Accepted connection from client.");
             
-            // handle client in a new thread
-            Thread t = new Thread(() -> handleClient(clientSocket));
-            t.start();
+            // handle clients
+            executor.execute(() -> {
+                handleClient(clientSocket);
+            });
         }
     }
 
@@ -36,16 +40,17 @@ public class LoadBalancer {
             Socket backendSocket = null;
             int attempts = 0;
             int maxRetries = 5;
+            int port = -1;
 
             while (backendSocket == null && attempts < maxRetries) {
-                int port = getNextBackendPort();
+                port = getNextBackendPort();
                 attempts++;
 
                 try {
                     backendSocket = new Socket("localhost", port);
                     System.out.println("Connected to backend port: " + port);
                 } catch (IOException e) {
-                    System.err.println("Attempt " + attempts + ": Backend port " + port + "is dead (retrying the next port)");
+                    System.err.println("Attempt " + attempts + ": Backend port " + port + " is dead (retrying the next port)");
                 }
             }
 
@@ -58,7 +63,7 @@ public class LoadBalancer {
             // send a request
             PrintWriter toBackend = new PrintWriter(backendSocket.getOutputStream(), true);
             toBackend.println("GET / HTTP/1.1");
-            toBackend.println("Host: localhost:8081");
+            toBackend.println("Host: localhost:" + port);
             toBackend.println(""); 
             toBackend.flush();
 
