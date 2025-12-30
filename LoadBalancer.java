@@ -47,7 +47,7 @@ public class LoadBalancer {
                 attempts++;
 
                 try {
-                    backendSocket = new Socket("localhost", port);
+                    backendSocket = new Socket("host.docker.internal", port);
                     System.out.println("Connected to backend port: " + port);
                 } catch (IOException e) {
                     System.err.println("Attempt " + attempts + ": Backend port " + port + " is dead (retrying the next port)");

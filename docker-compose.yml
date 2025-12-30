@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  # Service 1: Java Load Balancer
+  loadbalancer:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - BACKEND_HOST=host.docker.internal
+    extra_hosts:
+      - "host.docker.internal:host-gateway" 
+
+  # Service 2: Backend 1
+  backend1:
+    build:
+      context: .
+      dockerfile: Dockerfile-python
+    command: python backend_server.py 8081
+    ports:
+      - "8081:8081" 
+
+  # Service 3: Backend 2
+  backend2:
+    build:
+      context: .
+      dockerfile: Dockerfile-python
+    command: python backend_server.py 8082
+    ports:
+      - "8082:8082"
+
+  # Service 4: Backend 3
+  backend3:
+    build:
+      context: .
+      dockerfile: Dockerfile-python
+    command: python backend_server.py 8083
+    ports:
+      - "8083:8083"
